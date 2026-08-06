@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inventario de Equipos</title>
+<style>
+  @font-face { font-family: system-ui; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #14181F; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
+  body { min-height: 100vh; padding: 28px 16px 60px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .topbar { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 6px; }
+  .eyebrow { font-family: 'Courier New', monospace; font-size: 12px; color: #F5A623; letter-spacing: 2px; margin-bottom: 6px; }
+  h1 { font-size: 28px; color: #E8E6E1; margin: 0; font-weight: 700; }
+  .btn-primary { display: flex; align-items: center; gap: 8px; background: #F5A623; border: none; color: #151A24; font-weight: 700; font-size: 13.5px; padding: 11px 18px; border-radius: 7px; cursor: pointer; }
+  .btn-primary:active { opacity: 0.85; }
+  .summary { display: flex; gap: 18px; margin: 22px 0 24px; flex-wrap: wrap; font-size: 13px; color: #8B93A7; }
+  .summary span.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+  .search-box { position: relative; flex: 1 1 260px; }
+  .search-box svg { position: absolute; left: 12px; top: 11px; color: #5B6478; pointer-events: none; }
+  input, select, textarea { width: 100%; background: #151A24; border: 1px solid #2A3242; border-radius: 6px; color: #E8E6E1; padding: 9px 11px; font-size: 13.5px; font-family: inherit; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #F5A623; }
+  #searchInput { padding-left: 36px; }
+  .filter-box { width: 190px; }
+  .empty { border: 1px dashed #2A3242; border-radius: 10px; padding: 50px 20px; text-align: center; color: #5B6478; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+  .card { background: #1C2230; border: 1px solid #2A3242; border-radius: 10px; position: relative; overflow: hidden; }
+  .card .stripe { position: absolute; top: 0; left: 0; bottom: 0; width: 10px; background-image: repeating-linear-gradient(180deg, #3A4356 0px, #3A4356 2px, transparent 2px, transparent 5px); }
+  .card .inner { padding: 18px 18px 18px 26px; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .card-id-label { font-family: 'Courier New', monospace; font-size: 12px; color: #6B7280; letter-spacing: 1px; }
+  .card-id { font-size: 21px; font-weight: 700; color: #E8E6E1; }
+  .badge { font-family: 'Courier New', monospace; font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 4px; letter-spacing: 0.6px; transform: rotate(-2deg); white-space: nowrap; }
+  .loc { display: flex; align-items: center; gap: 6px; color: #8B93A7; font-size: 12.5px; margin-bottom: 12px; }
+  .modelo { color: #C9CDD8; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .specs { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 14px; margin-bottom: 14px; }
+  .spec-label { display: flex; align-items: center; gap: 5px; color: #5B6478; font-size: 10.5px; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px; }
+  .spec-value { font-family: 'Courier New', monospace; font-size: 13px; color: #E8E6E1; }
+  .periphs { display: flex; gap: 14px; padding-top: 12px; border-top: 1px dashed #2A3242; flex-wrap: wrap; }
+  .periph { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #C9CDD8; }
+  .periph .lbl { color: #5B6478; }
+  .notas { margin-top: 12px; font-size: 12.5px; color: #8B93A7; font-style: italic; }
+  .card-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .btn-ghost { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; font-weight: 600; background: transparent; border: 1px solid #2A3242; color: #C9CDD8; padding: 7px 12px; border-radius: 6px; cursor: pointer; flex: 1; }
+  .btn-ghost.danger { color: #E88; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(10,13,20,0.72); display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #1C2230; border: 1px solid #2A3242; border-radius: 12px; width: 100%; max-width: 540px; max-height: 88vh; overflow-y: auto; padding: 24px; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .modal-head h2 { font-size: 18px; color: #E8E6E1; margin: 0; }
+  .modal-head button { background: none; border: none; color: #8B93A7; cursor: pointer; padding: 4px; }
+  .field { display: block; margin-bottom: 14px; }
+  .field-label { font-size: 11.5px; font-weight: 600; color: #8B93A7; letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 14px; }
+  textarea { min-height: 60px; resize: vertical; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .btn-cancel { flex: 1; }
+  .btn-save { flex: 2; background: #F5A623; border: none; color: #151A24; font-weight: 700; font-size: 13.5px; border-radius: 6px; padding: 10px 14px; cursor: pointer; }
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-thumb { background: #2A3242; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">PROYECTO DE MANTENIMIENTO</div>
+      <h1>Inventario de equipos</h1>
+    </div>
+    <button class="btn-primary" id="btnAdd">+ Agregar equipo</button>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" placeholder="Buscar por código, ubicación, modelo o procesador..." />
+    </div>
+    <select id="filterSelect" class="filter-box">
+      <option value="todos">Todos los estados</option>
+      <option value="operativo">Operativo</option>
+      <option value="reparacion">En reparación</option>
+      <option value="baja">De baja</option>
+    </select>
+  </div>
+
+  <div id="gridContainer"></div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">Nuevo equipo</h2>
+      <button id="btnCloseModal">✕</button>
+    </div>
+    <form id="pcForm">
+      <div class="row2">
+        <label class="field"><span class="field-label">Código / ID</span><input name="codigo" placeholder="PC-01" /></label>
+        <label class="field"><span class="field-label">Ubicación</span><input name="ubicacion" placeholder="Sala de sistemas" /></label>
+      </div>
+      <label class="field"><span class="field-label">Modelo</span><input name="modelo" placeholder="Ej: HP ProDesk 400 G5" /></label>
+      <label class="field"><span class="field-label">Procesador</span><input name="procesador" placeholder="Ej: Intel Core i5-8500" /></label>
+      <div class="row3">
+        <label class="field"><span class="field-label">RAM</span><input name="ram" placeholder="8 GB" /></label>
+        <label class="field"><span class="field-label">Tipo disco</span>
+          <select name="almacenamientoTipo"><option>SSD</option><option>HDD</option><option>SSD + HDD</option></select>
+        </label>
+        <label class="field"><span class="field-label">Capacidad</span><input name="almacenamientoCapacidad" placeholder="256 GB" /></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span class="field-label">Tipo de teclado</span><input name="tecladoTipo" placeholder="Membrana" /></label>
+        <label class="field"><span class="field-label">Conexión teclado</span>
+          <select name="tecladoConexion"><option>Alámbrico</option><option>Inalámbrico</option></select>
+        </label>
+      </div>
+      <div class="row2">
+        <label class="field"><span class="field-label">Tipo de mouse</span><input name="mouseTipo" placeholder="Óptico" /></label>
+        <label class="field"><span class="field-label">Conexión mouse</span>
+          <select name="mouseConexion"><option>Alámbrico</option><option>Inalámbrico</option></select>
+        </label>
+      </div>
+      <label class="field"><span class="field-label">Estado</span>
+        <select name="estado">
+          <option value="operativo">Operativo</option>
+          <option value="reparacion">En reparación</option>
+          <option value="baja">De baja</option>
+        </select>
+      </label>
+      <label class="field"><span class="field-label">Notas</span><textarea name="notas" placeholder="Observaciones del mantenimiento..."></textarea></label>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost btn-cancel" id="btnCancelModal">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar equipo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "inventario_equipos_v1";
+  var STATUS = {
+    operativo:  { label: "OPERATIVO",       color: "#4FD1C5", bg: "rgba(79,209,197,0.12)" },
+    reparacion: { label: "EN REPARACIÓN",   color: "#F5A623", bg: "rgba(245,166,35,0.12)" },
+    baja:       { label: "DE BAJA",         color: "#8B93A7", bg: "rgba(139,147,167,0.12)" }
+  };
+
+  var equipos = [];
+  var editingId = null;
+  var query = "";
+  var filtro = "todos";
+
+  function uid() {
+    return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      equipos = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      equipos = [];
+    }
+  }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(equipos)); }
+    catch (e) { console.error("No se pudo guardar", e); }
+  }
+
+  function esc(str) {
+    var div = document.createElement("div");
+    div.textContent = str == null ? "" : String(str);
+    return div.innerHTML;
+  }
+
+  function renderSummary() {
+    var counts = { operativo: 0, reparacion: 0, baja: 0 };
+    equipos.forEach(function (e) { if (counts[e.estado] !== undefined) counts[e.estado]++; });
+    var html = "";
+    Object.keys(STATUS).forEach(function (k) {
+      html += '<div><span class="dot" style="background:' + STATUS[k].color + '"></span>' +
+        counts[k] + " " + STATUS[k].label.toLowerCase() + "</div>";
+    });
+    html += '<div>· ' + equipos.length + ' equipos en total</div>';
+    document.getElementById("summary").innerHTML = html;
+  }
+
+  function iconSvg(name) {
+    var icons = {
+      cpu: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>',
+      ram: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 19V5a2 2 0 012-2h8a2 2 0 012 2v14M2 19h20M6 19v2M10 19v2M14 19v2M18 19v2"/></svg>',
+      disk: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-2-8H4l-2 8z"/><circle cx="6" cy="8" r="0.5" fill="currentColor"/></svg>',
+      keyboard: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12"/><path d="M6 14h12"/></svg>',
+      mouse: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 00-7 7v6a7 7 0 0014 0V9a7 7 0 00-7-7zM12 2v7"/></svg>',
+      pin: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+      pencil: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>',
+      trash: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6h16z"/></svg>'
+    };
+    return icons[name] || "";
+  }
+
+  function cardHtml(pc) {
+    var s = STATUS[pc.estado] || STATUS.operativo;
+    var almacenamiento = ((pc.almacenamientoTipo || "") + " " + (pc.almacenamientoCapacidad || "")).trim();
+    return (
+      '<div class="card" data-id="' + esc(pc.id) + '">' +
+        '<div class="stripe"></div>' +
+        '<div class="inner">' +
+          '<div class="card-head">' +
+            '<div><div class="card-id-label">ACTIVO N.º</div><div class="card-id">' + esc(pc.codigo || "SIN CÓDIGO") + '</div></div>' +
+            '<div class="badge" style="color:' + s.color + ';background:' + s.bg + ';border:1px solid ' + s.color + '55">' + s.label + '</div>' +
+          '</div>' +
+          (pc.ubicacion ? '<div class="loc">' + iconSvg("pin") + ' ' + esc(pc.ubicacion) + '</div>' : '') +
+          '<div class="modelo">' + esc(pc.modelo || "Modelo sin especificar") + '</div>' +
+          '<div class="specs">' +
+            '<div><div class="spec-label">' + iconSvg("cpu") + ' Procesador</div><div class="spec-value">' + esc(pc.procesador || "—") + '</div></div>' +
+            '<div><div class="spec-label">' + iconSvg("ram") + ' RAM</div><div class="spec-value">' + esc(pc.ram || "—") + '</div></div>' +
+            '<div><div class="spec-label">' + iconSvg("disk") + ' Almacenamiento</div><div class="spec-value">' + esc(almacenamiento || "—") + '</div></div>' +
+          '</div>' +
+          '<div class="periphs">' +
+            '<div class="periph">' + iconSvg("keyboard") + ' <span class="lbl">Teclado:</span> ' + esc(pc.tecladoTipo || "—") + (pc.tecladoConexion ? " · " + esc(pc.tecladoConexion) : "") + '</div>' +
+            '<div class="periph">' + iconSvg("mouse") + ' <span class="lbl">Mouse:</span> ' + esc(pc.mouseTipo || "—") + (pc.mouseConexion ? " · " + esc(pc.mouseConexion) : "") + '</div>' +
+          '</div>' +
+          (pc.notas ? '<div class="notas">' + esc(pc.notas) + '</div>' : '') +
+          '<div class="card-actions">' +
+            '<button class="btn-ghost btn-edit" data-id="' + esc(pc.id) + '">' + iconSvg("pencil") + ' Editar</button>' +
+            '<button class="btn-ghost danger btn-delete" data-id="' + esc(pc.id) + '">' + iconSvg("trash") + ' Eliminar</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderGrid() {
+    var filtered = equipos.filter(function (e) {
+      if (filtro !== "todos" && e.estado !== filtro) return false;
+      if (!query.trim()) return true;
+      var q = query.toLowerCase();
+      return [e.codigo, e.ubicacion, e.modelo, e.procesador].some(function (v) {
+        return (v || "").toLowerCase().indexOf(q) !== -1;
+      });
+    });
+
+    var container = document.getElementById("gridContainer");
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty">' +
+        (equipos.length === 0
+          ? 'Aún no has agregado equipos. Usa "Agregar equipo" para empezar tu inventario.'
+          : 'Ningún equipo coincide con la búsqueda o el filtro.') +
+        '</div>';
+      return;
+    }
+    container.innerHTML = '<div class="grid">' + filtered.map(cardHtml).join("") + '</div>';
+  }
+
+  function renderAll() {
+    renderSummary();
+    renderGrid();
+  }
+
+  function openModal(pc) {
+    editingId = pc ? pc.id : null;
+    document.getElementById("modalTitle").textContent = pc ? "Editar equipo" : "Nuevo equipo";
+    var form = document.getElementById("pcForm");
+    form.reset();
+    if (pc) {
+      Object.keys(pc).forEach(function (key) {
+        var el = form.elements[key];
+        if (el) el.value = pc[key];
+      });
+    }
+    document.getElementById("modalOverlay").classList.add("open");
+  }
+
+  function closeModal() {
+    document.getElementById("modalOverlay").classList.remove("open");
+    editingId = null;
+  }
+
+  function handleSubmit(ev) {
+    ev.preventDefault();
+    var form = ev.target;
+    var data = {
+      codigo: form.codigo.value.trim(),
+      ubicacion: form.ubicacion.value.trim(),
+      modelo: form.modelo.value.trim(),
+      procesador: form.procesador.value.trim(),
+      ram: form.ram.value.trim(),
+      almacenamientoTipo: form.almacenamientoTipo.value,
+      almacenamientoCapacidad: form.almacenamientoCapacidad.value.trim(),
+      tecladoTipo: form.tecladoTipo.value.trim(),
+      tecladoConexion: form.tecladoConexion.value,
+      mouseTipo: form.mouseTipo.value.trim(),
+      mouseConexion: form.mouseConexion.value,
+      estado: form.estado.value,
+      notas: form.notas.value.trim()
+    };
+
+    if (editingId) {
+      equipos = equipos.map(function (e) { return e.id === editingId ? Object.assign({ id: editingId }, data) : e; });
+    } else {
+      data.id = uid();
+      equipos.unshift(data);
+    }
+    save();
+    renderAll();
+    closeModal();
+  }
+
+  function handleGridClick(ev) {
+    var editBtn = ev.target.closest(".btn-edit");
+    var delBtn = ev.target.closest(".btn-delete");
+    if (editBtn) {
+      var pc = equipos.find(function (e) { return e.id === editBtn.dataset.id; });
+      if (pc) openModal(pc);
+    } else if (delBtn) {
+      if (window.confirm("¿Eliminar este equipo del inventario?")) {
+        equipos = equipos.filter(function (e) { return e.id !== delBtn.dataset.id; });
+        save();
+        renderAll();
+      }
+    }
+  }
+
+  document.getElementById("btnAdd").addEventListener("click", function () { openModal(null); });
+  document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+  document.getElementById("btnCancelModal").addEventListener("click", closeModal);
+  document.getElementById("modalOverlay").addEventListener("click", function (ev) {
+    if (ev.target.id === "modalOverlay") closeModal();
+  });
+  document.getElementById("pcForm").addEventListener("submit", handleSubmit);
+  document.getElementById("gridContainer").addEventListener("click", handleGridClick);
+  document.getElementById("searchInput").addEventListener("input", function (ev) {
+    query = ev.target.value;
+    renderGrid();
+  });
+  document.getElementById("filterSelect").addEventListener("change", function (ev) {
+    filtro = ev.target.value;
+    renderGrid();
+  });
+
+  load();
+  renderAll();
+})();
+</script>
+</body>
+</html>
