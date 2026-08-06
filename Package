@@ -1,0 +1,6 @@
+{
+  "name": "inventario-computadores",
+  "scripts": {
+    "start": "npx serve -s . -l $PORT"
+  }
+}
